@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 Google Inc.
+ * Copyright 2013 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -26,7 +26,6 @@ import com.google.api.client.util.Clock;
 import com.google.api.client.util.Preconditions;
 import com.google.api.client.util.SecurityUtils;
 import com.google.api.client.util.StringUtils;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -212,7 +211,7 @@ public class GooglePublicKeysManager {
       for (String arg : httpHeaders.getCacheControl().split(",")) {
         Matcher m = MAX_AGE_PATTERN.matcher(arg);
         if (m.matches()) {
-          cacheTimeInSec = Long.valueOf(m.group(1));
+          cacheTimeInSec = Long.parseLong(m.group(1));
           break;
         }
       }

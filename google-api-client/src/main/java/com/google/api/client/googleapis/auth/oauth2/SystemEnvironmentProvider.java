@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Google Inc.
+ * Copyright 2015 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -25,5 +25,11 @@ class SystemEnvironmentProvider {
   String getEnv(String name) {
     return System.getenv(name);
   }
-}
 
+  /**
+   * Override in test code to isolate from environment.
+   */
+  boolean getEnvEquals(String name, String value) {
+    return System.getenv().containsKey(name) && System.getenv(name).equals(value);
+  }
+}

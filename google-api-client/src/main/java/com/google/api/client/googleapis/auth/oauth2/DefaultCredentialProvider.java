@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Google Inc.
+ * Copyright 2014 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -29,10 +29,11 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.security.AccessControlException;
 import java.util.Locale;
-import java.util.Map;
 
 /**
  * {@link Beta} <br/>
@@ -170,7 +171,7 @@ class DefaultCredentialProvider extends SystemEnvironmentProvider {
       return Environment.WELL_KNOWN_FILE;
 
     // Try App Engine
-    } else if (runningOnAppEngine()) {
+    } else if (useGAEStandardAPI()) {
       return Environment.APP_ENGINE;
 
     // Then try Cloud Shell.  This must be done BEFORE checking
@@ -257,19 +258,39 @@ class DefaultCredentialProvider extends SystemEnvironmentProvider {
     }
   }
 
-  private boolean runningOnAppEngine() {
-    Map<String, String> env = System.getenv();
-    if (env.containsKey("GAE_ENV") && env.get("GAE_ENV").equals("standard")) {
-      return true;
+  private boolean useGAEStandardAPI() {
+    Class<?> systemPropertyClass = null;
+    try {
+      systemPropertyClass = forName("com.google.appengine.api.utils.SystemProperty");
+    } catch (ClassNotFoundException expected) {
+      // SystemProperty will always be present on App Engine.
+      return false;
     }
-    if (env.containsKey("GAE_RUNTIME") &&
-        (env.get("GAE_RUNTIME").equals("java7") || env.get("GAE_RUNTIME").equals("java8"))) {
-      return true;
+    Exception cause = null;
+    Field environmentField;
+    try {
+      environmentField = systemPropertyClass.getField("environment");
+      Object environmentValue = environmentField.get(null);
+      Class<?> environmentType = environmentField.getType();
+      Method valueMethod = environmentType.getMethod("value");
+      Object environmentValueValue = valueMethod.invoke(environmentValue);
+      return (environmentValueValue != null);
+    } catch (NoSuchFieldException exception) {
+      cause = exception;
+    } catch (SecurityException exception) {
+      cause = exception;
+    } catch (IllegalArgumentException exception) {
+      cause = exception;
+    } catch (IllegalAccessException exception) {
+      cause = exception;
+    } catch (NoSuchMethodException exception) {
+      cause = exception;
+    } catch (InvocationTargetException exception) {
+      cause = exception;
     }
-    if (env.containsKey("GAE_VM") && env.get("GAE_VM") == "true") {
-      return true;
-    }
-    return false;
+    throw OAuth2Utils.exceptionWithCause(new RuntimeException(String.format(
+        "Unexpcted error trying to determine if runnning on Google App Engine: %s",
+        cause.getMessage())), cause);
   }
 
   private final GoogleCredential getAppEngineCredential(
